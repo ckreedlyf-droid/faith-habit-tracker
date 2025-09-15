@@ -21,7 +21,7 @@ import {
 } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD-a6DYhlalLboFFDClMJbzGw-9bozhg",
+  apiKey: "AIzaSyD-a6aDYhvlaLbboFFDCIMJbzGw-9bOzhg",
   authDomain: "faith-habit-tracker.firebaseapp.com",
   projectId: "faith-habit-tracker",
   storageBucket: "faith-habit-tracker.firebasestorage.app",
