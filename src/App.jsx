@@ -211,4 +211,129 @@ function Dashboard({user}){
 
   const verseOfDay=useMemo(()=>{ const idx=Number(new Date().toISOString().slice(0,10).replaceAll('-',''))%VERSES.length; return VERSES[idx]; },[]);
 
-  const milestones=useMemo(()=>{ const L=[]; if(totals.devotional>=goals.devotional)L.push({label:"Weekly Devoti
+  const milestones=useMemo(()=>{ const L=[]; if(totals.devotional>=goals.devotional)L.push({label:"Weekly Devotional Streak",detail:`${totals.devotional}/${goals.devotional}`}); if(totals.pages>=goals.pages)L.push({label:"Book Worm",detail:`${totals.pages} pages`}); if(totals.reps>=goals.reps)L.push({label:"Temple Care",detail:`${totals.reps} reps`}); if(totals.anger===0&&totals.social===0&&totals.porn===0)L.push({label:"Eyes & Heart Guarded",detail:"No anger/social/porn"}); return L; },[totals,goals]);
+
+  const showReminder=(()=>{ const now=new Date(); const logged=weekEntries.find(e=>e.id===today); return now.getHours()>=21 && !logged; })();
+
+  const saveToday=async()=>{ setSaving(true); try{ const ref=doc(db,"users",user.uid,"entries",today); await setDoc(ref,{...entry,date:today,dateTs:startOfToday().getTime(),updatedAt:serverTimestamp()},{merge:true}); if(entry.devotional){ const uref=doc(db,"users",user.uid); const snap=await getDoc(uref); let count=1; if(snap.exists()){ const s=snap.data().streak||{count:0,lastDevoDate:null}; const y=new Date(startOfToday()); y.setDate(y.getDate()-1); const yISO=toISODate(y); count = (s.lastDevoDate===yISO)? (s.count||0)+1 : 1; } await updateDoc(uref,{streak:{count,lastDevoDate:today}}); } } finally{ setSaving(false);} };
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.container}>
+        {/* header */}
+        <div style={styles.header}>
+          <div>
+            <h1 style={styles.h1}>Hello, {user.email}</h1>
+            <div style={{color:"#64748b", fontSize:13}}>Today: {today}</div>
+          </div>
+          <div style={{display:"flex", gap:8}}>
+            <button onClick={()=>setShowGoals(true)} style={styles.btn}>Goals</button>
+            <button onClick={()=>signOut(auth)} style={styles.btnPrimary}>Sign out</button>
+          </div>
+        </div>
+
+        {showReminder && <div style={{...styles.banner, marginBottom:16}}>⏰ Don’t forget to log today’s habits before sleep.</div>}
+
+        {/* Verse */}
+        <div style={{...styles.verse, marginBottom:16}}>
+          <div style={{fontStyle:"italic", fontSize:18, marginBottom:6}}>“{verseOfDay.text}”</div>
+          <div style={{opacity:.9, fontSize:12}}>— {verseOfDay.ref}</div>
+        </div>
+
+        {/* grid */}
+        <div style={styles.grid}>
+          {/* Log Today */}
+          <div style={styles.card}>
+            <h2 style={styles.h2}>Log Today</h2>
+            <div style={{display:"grid", gap:12, gridTemplateColumns:"repeat(auto-fit, minmax(180px,1fr))"}}>
+              <label style={{display:"flex", alignItems:"center", gap:8, border:"1px solid #e2e8f0", borderRadius:12, padding:12}}>
+                <input type="checkbox" checked={entry.devotional} onChange={e=>setEntry(v=>({...v,devotional:e.target.checked}))}/>
+                <span>Devotional & Prayer (done)</span>
+              </label>
+              {["pages","reps","anger","social","porn"].map((k)=> (
+                <div key={k}>
+                  <label style={{...styles.label, textTransform:"capitalize"}}>{k==="pages"?"Pages Read":k==="reps"?"Exercise Reps":k==="porn"?"Porn/Masturbation (count)":`${k} (count)`}</label>
+                  <input type="number" min={0} style={styles.input} value={entry[k]} onChange={e=>setEntry(v=>({...v,[k]:Number(e.target.value)}))}/>
+                </div>
+              ))}
+            </div>
+            <button style={{...styles.btnPrimary, width:"100%", marginTop:12}} disabled={saving} onClick={saveToday}>{saving?"Saving…":"Save Today"}</button>
+          </div>
+
+          {/* This Week */}
+          <div style={styles.card}>
+            <h2 style={styles.h2}>This Week</h2>
+            {[{k:"devotional",label:"Devotional", val:progress.devotional, good:true, extra:`${totals.devotional}/${goals.devotional}`},
+              {k:"pages",label:"Pages", val:progress.pages, good:true, extra:`${totals.pages}/${goals.pages}`},
+              {k:"reps",label:"Reps", val:progress.reps, good:true, extra:`${totals.reps}/${goals.reps}`},
+              {k:"anger",label:"Anger (lower is better)", val:progress.anger, good:true, extra:`${totals.anger}/${goals.anger}`},
+              {k:"social",label:"Social Media (lower is better)", val:progress.social, good:true, extra:`${totals.social}/${goals.social}`},
+              {k:"porn",label:"Porn (lower is better)", val:progress.porn, good:true, extra:`${totals.porn}/${goals.porn}`},
+            ].map(row=> (
+              <div key={row.k} style={{marginBottom:10}}>
+                <div style={{display:"flex", justifyContent:"space-between", fontSize:12}}><span>{row.label}</span><span>{row.extra}</span></div>
+                <div style={styles.progressBG}><div style={styles.progressFill(row.val)} /></div>
+              </div>
+            ))}
+
+            {milestones.length>0 && (
+              <div style={{marginTop:10}}>
+                <div style={{fontWeight:600, marginBottom:6}}>Badges</div>
+                <ul style={{margin:0, paddingLeft:16}}>
+                  {milestones.map((m,i)=>(<li key={i}><strong>{m.label}</strong> – <span style={{color:"#475569"}}>{m.detail}</span></li>))}
+                </ul>
+              </div>
+            )}
+
+            {userDoc?.streak && <div style={{marginTop:10, fontSize:13, color:"#475569"}}>Devotional streak: <strong>{userDoc.streak.count} day(s)</strong></div>}
+          </div>
+        </div>
+
+        {/* Week Log */}
+        <div style={{...styles.card, marginTop:16}}>
+          <h2 style={styles.h2}>Week Log</h2>
+          <div style={styles.tableWrap}>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  {['Date','Devo','Pages','Reps','Anger','Social','Porn'].map(h=> <th key={h} style={styles.th}>{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {weekEntries.length===0 && (
+                  <tr><td style={styles.td} colSpan={7}>
+                    <span style={{color:"#64748b"}}>No logs yet this week.</span>
+                  </td></tr>
+                )}
+                {weekEntries.map(e=> (
+                  <tr key={e.id}>
+                    <td style={styles.td}>{e.date}</td>
+                    <td style={styles.td}>{e.devotional?"✓":"—"}</td>
+                    <td style={styles.td}>{e.pages||0}</td>
+                    <td style={styles.td}>{e.reps||0}</td>
+                    <td style={styles.td}>{e.anger||0}</td>
+                    <td style={styles.td}>{e.social||0}</td>
+                    <td style={styles.td}>{e.porn||0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style={{textAlign:"center", color:"#94a3b8", fontSize:12, marginTop:12}}>Built for accountability, grace, and growth.</div>
+      </div>
+
+      <GoalsModal open={showGoals} onClose={()=>setShowGoals(false)} goals={goals}
+        onSave={async(g)=>{ await updateDoc(doc(db,'users',user.uid),{goals:g}); setShowGoals(false); }}/>
+    </div>
+  );
+}
+
+export default function App(){
+  const [user,setUser]=useState(null);
+  const [checking,setChecking]=useState(true);
+  useEffect(()=>{ const unsub=onAuthStateChanged(auth,(u)=>{ setUser(u||null); setChecking(false); }); return ()=>unsub(); },[]);
+  if(checking){ return (<div style={{...styles.page, display:"grid", placeItems:"center"}}><div style={{opacity:.6}}>Loading…</div></div>); }
+  return user? <Dashboard user={user}/> : <AuthPanel/>;
+}
