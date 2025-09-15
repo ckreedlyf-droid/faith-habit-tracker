@@ -20,7 +20,6 @@ import {
   where,
 } from "firebase/firestore";
 
-// Firebase config (filled from your console)
 const firebaseConfig = {
   apiKey: "AIzaSyD-a6DYhlalLboFFDClMJbzGw-9bozhg",
   authDomain: "faith-habit-tracker.firebaseapp.com",
@@ -30,6 +29,7 @@ const firebaseConfig = {
   appId: "1:608118770475:web:8825dff77baf7be712326e",
   measurementId: "G-G4M310M8HW"
 };
+
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
