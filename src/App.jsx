@@ -25,7 +25,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyD-a6DYhlalLboFFDClMJbzGw-9bozhg",
   authDomain: "faith-habit-tracker.firebaseapp.com",
   projectId: "faith-habit-tracker",
-  storageBucket: "faith-habit-tracker.appspot.com",
+  storageBucket: "faith-habit-tracker.firebasestorage.app",
   messagingSenderId: "608118770475",
   appId: "1:608118770475:web:8825dff77baf7be712326e",
   measurementId: "G-G4M310M8HW"
